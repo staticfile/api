@@ -25,9 +25,11 @@ exports.search = function (req, res) {
     .on('data', function (data) {
       var data = JSON.parse(data);
 
-      data.hits.hits = _.map(data.hits.hits, function (lib) {
+      data.hits.libs = _.map(data.hits.hits, function (lib) {
         return lib._source;
       });
+
+      delete data.hits.hits;
 
       res.json(data.hits);
     })
