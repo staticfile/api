@@ -11,13 +11,12 @@ var fs = require('fs')
   , esClient = new ElasticSearchClient(serverOptions)
   , dir;
 
-
-if (!process.argv[0]) {
+if (!process.argv[2]) {
   console.log('Usage: node index.js [dir]');
   process.exit();
 }
 
-dir = process.argv[0];
+dir = process.argv[2];
 
 lookDir(dir, function (err, results) {
   results.forEach(function (lib) {
