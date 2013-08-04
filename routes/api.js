@@ -23,6 +23,7 @@ exports.search = function (req, res) {
 
   res.header({
     "Access-Control-Allow-Origin": 'http://www.staticfile.org',
+    "Access-Control-Allow-Origin": 'http://staticfile.org',
     "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
     "Access-Control-Allow-Headers": "X-PINGOTHER"
   });
