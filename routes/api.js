@@ -34,7 +34,7 @@ exports.search = function (req, res) {
 
         res.json(data.hits);
       } else {
-        res.json({total: 0, max_score: 0, libs: {}});
+        res.json({total: 0, max_score: 0, libs: []});
       }
     })
     .on('done', function () {
