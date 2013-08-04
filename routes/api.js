@@ -21,6 +21,8 @@ exports.search = function (req, res) {
     "size": req.query.count || 10
   };
 
+  res.header('Access-Control-Allow-Origin', 'staticfile.org');
+
   elasticSearchClient.search('static', 'libs', qryObj)
     .on('data', function (data) {
       var data = JSON.parse(data);
@@ -32,7 +34,7 @@ exports.search = function (req, res) {
 
         delete data.hits.hits;
 
-        res.json(data.hits);
+        res.jsonp(data.hits);
       } else {
         res.json({total: 0, max_score: 0, libs: []});
       }
