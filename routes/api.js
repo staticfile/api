@@ -21,11 +21,17 @@ exports.search = function (req, res) {
     "size": req.query.count || 10
   };
 
-  res.header('Access-Control-Allow-Origin', 'www.staticfile.org');
+  var render = function (data) {
+    if (req.query[req.app.get('jsonp callback name')]) {
+      res.jsonp(data);
+    } else {
+      res.json(data);
+    }
+  };
 
   elasticSearchClient.search('static', 'libs', qryObj)
     .on('data', function (data) {
-      var data = JSON.parse(data);
+      data = JSON.parse(data);
 
       if (data.hits) {
         data.hits.libs = _.map(data.hits.hits, function (lib) {
@@ -34,16 +40,16 @@ exports.search = function (req, res) {
 
         delete data.hits.hits;
 
-        res.json(data.hits);
+        render(data.hits);
       } else {
-        res.json({total: 0, max_score: 0, libs: []});
+        render({total: 0, max_score: 0, libs: []});
       }
     })
     .on('done', function () {
       //always returns 0 right now
     })
     .on('error', function (error) {
-      res.json({success: false, error: error});
+      render({success: false, error: error});
     })
     .exec()
 };
