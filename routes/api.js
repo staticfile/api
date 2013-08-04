@@ -21,7 +21,7 @@ exports.search = function (req, res) {
     "size": req.query.count || 10
   };
 
-  res.header('Access-Control-Allow-Origin', 'staticfile.org');
+  res.header('Access-Control-Allow-Origin', 'www.staticfile.org');
 
   elasticSearchClient.search('static', 'libs', qryObj)
     .on('data', function (data) {
