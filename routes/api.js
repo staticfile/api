@@ -25,13 +25,17 @@ exports.search = function (req, res) {
     .on('data', function (data) {
       var data = JSON.parse(data);
 
-      data.hits.libs = _.map(data.hits.hits, function (lib) {
-        return lib._source;
-      });
+      if (data.hits) {
+        data.hits.libs = _.map(data.hits.hits, function (lib) {
+          return lib._source;
+        });
 
-      delete data.hits.hits;
+        delete data.hits.hits;
 
-      res.json(data.hits);
+        res.json(data.hits);
+      } else {
+        res.json({total: 0, max_score: 0, libs: {}});
+      }
     })
     .on('done', function () {
       //always returns 0 right now
