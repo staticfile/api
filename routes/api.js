@@ -14,7 +14,18 @@ var elasticSearchClient = new ElasticSearchClient(serverOptions);
 exports.search = function (req, res) {
   var qryObj = {
     query: {
-      prefix: {name: req.query.q}
+      bool: {
+        must: {
+          prefix: {
+            name: req.query.q
+          }
+        },
+        should: {
+          term: {
+            name: req.query.q
+          }
+        }
+      }
     },
     size: req.query.count || 100
   };
