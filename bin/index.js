@@ -1,5 +1,7 @@
 var fs = require('fs')
   , ElasticSearchClient = require('elasticsearchclient')
+  , glob = require('glob')
+  , natcompare = require('./natcompare')
   , serverOptions = {
     hosts: [
       {
@@ -18,40 +20,43 @@ if (!process.argv[2]) {
 
 dir = process.argv[2];
 
-lookDir(dir, function (err, results) {
-  results.forEach(function (lib) {
-    var info = dir + '/' + lib + '/package.json';
-    var data = JSON.parse(fs.readFileSync(info, {encoding: "utf-8"}));
-    lookDir(dir + '/' + lib, function (err, results) {
-      data.versions = results;
-
-      esClient.index('static', 'libs', data, lib)
-        .on('data', function (data) {
-          console.log('[index] ' + lib + ' indexed.');
-        })
-        .exec()
-
-    });
+listPackages(dir, function (err, packages) {
+  packages.forEach(function (lib) {
+    esClient.index('static', 'libs', lib, lib.name)
+      .on('data', function (data) {
+        console.log('[index] ' + lib.name + ' indexed.');
+      })
+      .exec()
   });
 });
 
-function lookDir(dir, back) {
-  var result = [];
-  fs.readdir(dir, function (err, files) {
-    if (err) back(err);
-    files = files.filter(function (value) {
-      return (value[0] != '.');
-    });
-    var pending = files.length;
-    if (!pending) return back(null, result);
-    files.forEach(function (file) {
-      fs.stat(dir + '/' + file, function (err, stats) {
-        if (stats.isDirectory()) {
-          result.push(file);
-        }
 
-        if (!--pending) back(null, result);
+function listPackages(dir, callback) {
+  var packages = Array();
+
+  console.log(dir + "/**/package.json");
+
+  glob(dir + "/**/package.json", function (error, matches) {
+    matches.forEach(function (element) {
+      var package = JSON.parse(fs.readFileSync(element, 'utf8'));
+      package.assets = Array();
+      var versions = glob.sync(dir + "/" + package.name + "/!(package.json)");
+      versions.forEach(function (version) {
+        var temp = Object();
+        temp.version = version.replace(/^.+\//, "");
+        temp.files = glob.sync(version + "/**/*.*");
+        for (var i = 0; i < temp.files.length; i++) {
+          temp.files[i] = temp.files[i].replace(version + "/", "");
+        }
+        package.assets.push(temp);
       });
+      package.assets.sort(function (a, b) {
+        return natcompare.compare(a.version, b.version);
+      })
+      package.assets.reverse();
+      packages.push(package);
     });
+
+    callback(null, packages);
   });
-}
+};

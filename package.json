@@ -9,6 +9,7 @@
     "express": "3.1.2",
     "jade": "*",
     "elasticsearchclient": "0.5.3",
-    "underscore": "1.5.1"
+    "underscore": "1.5.1",
+    "glob": "3.2.6"
   }
 }
