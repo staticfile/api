@@ -31,11 +31,11 @@ exports.search = function (req, res) {
   };
 
   res.header({
-    "Access-Control-Allow-Origin": 'http://www.staticfile.org',
-    "Access-Control-Allow-Origin": 'http://staticfile.org',
     "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
     "Access-Control-Allow-Headers": "X-PINGOTHER"
   });
+
+  res.header('Access-Control-Allow-Origin', ['http://www.staticfile.org', 'http://staticfile.org']);
 
   var render = function (data) {
     if (req.query[req.app.get('jsonp callback name')]) {
