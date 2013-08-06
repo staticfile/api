@@ -13,15 +13,17 @@ var fs = require('fs')
   , esClient = new ElasticSearchClient(serverOptions)
   , dir;
 
-if (!process.argv[2]) {
-  console.log('Usage: node index.js [dir]');
+if (!process.argv[2] || !process.argv[3]) {
+  console.log('Usage: node index.js <dir> <ref>');
   process.exit();
 }
 
 dir = process.argv[2];
+ref = process.argv[3];
 
 listPackages(dir, function (err, packages) {
   packages.forEach(function (lib) {
+    lib.ref = ref;
     esClient.index('static', 'libs', lib, lib.name)
       .on('data', function (data) {
         console.log('[index] ' + lib.name + ' indexed.');
