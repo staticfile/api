@@ -50,6 +50,9 @@ function listPackages(dir, callback) {
         }
         package.assets.push(temp);
       });
+
+      if (!package.assets[0]) return;
+
       package.assets.sort(function (a, b) {
         return natcompare.compare(a.version, b.version);
       })
