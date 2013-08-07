@@ -21,6 +21,12 @@ app.use(express.bodyParser());
 app.use(express.methodOverride());
 app.use(express.compress());
 app.use('/v1', function (req, res, next) {
+  res.header({
+    "Access-Control-Allow-Origin": 'http://staticfile.org',
+    "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+    "Access-Control-Allow-Headers": "X-PINGOTHER"
+  });
+
   res.api = function (data) {
     if (req.query[req.app.get('jsonp callback name')]) {
       res.jsonp(data);

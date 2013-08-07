@@ -62,12 +62,6 @@ exports.search = function (req, res) {
     size: req.query.count || 100
   };
 
-  res.header({
-    "Access-Control-Allow-Origin": 'http://staticfile.org',
-    "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-    "Access-Control-Allow-Headers": "X-PINGOTHER"
-  });
-
   elasticSearchClient.search('static', 'libs', qryObj)
     .on('data', function (data) {
       data = JSON.parse(data);
