@@ -1,4 +1,7 @@
 var ElasticSearchClient = require('elasticsearchclient')
+  , _ = require('underscore')
+  , fs = require('fs')
+  , path = require('path')
   , serverOptions = {
     hosts: [
       {
@@ -7,9 +10,36 @@ var ElasticSearchClient = require('elasticsearchclient')
       }
     ]
   }
-  , _ = require('underscore')
 
 var elasticSearchClient = new ElasticSearchClient(serverOptions);
+
+exports.popular = function (req, res) {
+  fs.readFile(path.dirname(__dirname) + '/popular.json', function (err, content) {
+    if (err) {
+      res.api({success: false, error: "Can not list popular.json"});
+      return;
+    }
+
+    var populars = JSON.parse(content);
+    elasticSearchClient.multiget('static', 'libs', populars)
+      .on('data', function (data) {
+        data = JSON.parse(data);
+
+        data = _.map(data.docs, function (lib) {
+          return lib._source;
+        });
+
+        res.api({libs: data});
+      })
+      .on('done', function () {
+        //always returns 0 right now
+      })
+      .on('error', function (error) {
+        res.api({success: false, error: error});
+      })
+      .exec()
+  });
+}
 
 exports.search = function (req, res) {
   var qryObj = {
@@ -38,14 +68,6 @@ exports.search = function (req, res) {
     "Access-Control-Allow-Headers": "X-PINGOTHER"
   });
 
-  var render = function (data) {
-    if (req.query[req.app.get('jsonp callback name')]) {
-      res.jsonp(data);
-    } else {
-      res.json(data);
-    }
-  };
-
   elasticSearchClient.search('static', 'libs', qryObj)
     .on('data', function (data) {
       data = JSON.parse(data);
@@ -57,16 +79,16 @@ exports.search = function (req, res) {
 
         delete data.hits.hits;
 
-        render(data.hits);
+        res.api(data.hits);
       } else {
-        render({total: 0, max_score: 0, libs: []});
+        res.api({total: 0, max_score: 0, libs: []});
       }
     })
     .on('done', function () {
       //always returns 0 right now
     })
     .on('error', function (error) {
-      render({success: false, error: error});
+      res.api({success: false, error: error});
     })
     .exec()
 };

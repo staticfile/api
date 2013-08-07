@@ -20,6 +20,16 @@ app.use(express.logger('dev'));
 app.use(express.bodyParser());
 app.use(express.methodOverride());
 app.use(express.compress());
+app.use('/v1', function (req, res, next) {
+  res.api = function (data) {
+    if (req.query[req.app.get('jsonp callback name')]) {
+      res.jsonp(data);
+    } else {
+      res.json(data);
+    }
+  };
+  next();
+});
 app.use(app.router);
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -30,6 +40,7 @@ if ('development' == app.get('env')) {
 
 app.get('/', routes.index);
 app.get('/v1/search', routes.api.search);
+app.get('/v1/popular', routes.api.popular);
 
 http.createServer(app).listen(app.get('port'), function () {
   console.log('Express server listening on port ' + app.get('port'));
