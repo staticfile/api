@@ -17,12 +17,12 @@ exports.search = function (req, res) {
       bool: {
         must: {
           prefix: {
-            name: req.query.q
+            name: req.query.q.toLowerCase()
           }
         },
         should: {
           term: {
-            name: req.query.q
+            name: req.query.q.toLowerCase()
           }
         }
       }
