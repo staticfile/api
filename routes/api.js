@@ -15,16 +15,18 @@ exports.search = function (req, res) {
   var qryObj = {
     query: {
       bool: {
-        must: {
-          prefix: {
-            name: req.query.q.toLowerCase()
+        should: [
+          {
+            prefix: {
+              name: req.query.q.toLowerCase()
+            }
+          },
+          {
+            text: {
+              name: req.query.q.toLowerCase()
+            }
           }
-        },
-        should: {
-          term: {
-            name: req.query.q.toLowerCase()
-          }
-        }
+        ]
       }
     },
     size: req.query.count || 100
