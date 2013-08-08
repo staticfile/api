@@ -29,7 +29,8 @@ listPackages(dir, function (err, packages) {
       version: lib.version,
       keywords: lib.keywords,
       description: lib.description,
-      assets: lib.assets
+      assets: lib.assets,
+      repositories: lib.repositories
     };
 
     esClient.index('static', 'libs', index, lib.name)
