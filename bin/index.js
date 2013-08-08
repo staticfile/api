@@ -22,7 +22,17 @@ dir = process.argv[2];
 
 listPackages(dir, function (err, packages) {
   packages.forEach(function (lib) {
-    esClient.index('static', 'libs', lib, lib.name)
+    var index = {
+      name: lib.name,
+      filename: lib.filename,
+      homepage: lib.homepage,
+      version: lib.version,
+      keywords: lib.keywords,
+      description: lib.description,
+      assets: lib.assets
+    };
+
+    esClient.index('static', 'libs', index, lib.name)
       .on('data', function (data) {
         console.log('[index] ' + lib.name + ' indexed.');
       })
