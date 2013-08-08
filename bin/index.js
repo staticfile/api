@@ -30,7 +30,7 @@ listPackages(dir, function (err, packages) {
       keywords: lib.keywords,
       description: lib.description,
       assets: lib.assets,
-      repositories: lib.repositories
+      repositories: lib.repositories || (lib.repository && [lib.repository]) || []
     };
 
     esClient.index('static', 'libs', index, lib.name)
