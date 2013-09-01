@@ -68,7 +68,6 @@ exports.search = function (req, res) {
 
       if (data.hits) {
         data.hits.libs = _.map(data.hits.hits, function (lib) {
-          lib._source.score = lib._score;
           return lib._source;
         });
 
