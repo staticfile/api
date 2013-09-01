@@ -45,27 +45,21 @@ exports.search = function (req, res) {
   var q = req.query.q.toLowerCase();
   var qryObj = {
     query: {
-      bool: {
-        should: [
+      "dis_max": {
+        "queries": [
           {
-            prefix: {
-              name: q
-            }
+            "prefix": { "name": q }
           },
           {
-            text: {
-              name: q
-            }
+            "term": { "name": q }
           },
           {
-            wildcard: {
-              name: "*" + q + "*"
-            }
+            "term": { "keywords": q }
           }
         ]
       }
     },
-    size: req.query.count || 100
+    size: req.query.count || 30
   };
 
   elasticSearchClient.search('static', 'libs', qryObj)
@@ -74,6 +68,7 @@ exports.search = function (req, res) {
 
       if (data.hits) {
         data.hits.libs = _.map(data.hits.hits, function (lib) {
+          lib._source.score = lib._score;
           return lib._source;
         });
 
