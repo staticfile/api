@@ -42,18 +42,24 @@ exports.popular = function (req, res) {
 }
 
 exports.search = function (req, res) {
+  var q = req.query.q.toLowerCase();
   var qryObj = {
     query: {
       bool: {
         should: [
           {
             prefix: {
-              name: req.query.q.toLowerCase()
+              name: q
             }
           },
           {
             text: {
-              name: req.query.q.toLowerCase()
+              name: q
+            }
+          },
+          {
+            wildcard: {
+              name: "*" + q + "*"
             }
           }
         ]
