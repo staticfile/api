@@ -51,7 +51,7 @@ exports.search = function (req, res) {
             "prefix": { "name": q }
           },
           {
-            "term": { "name": q }
+            "text": { "name": q }
           },
           {
             "term": { "keywords": q }
