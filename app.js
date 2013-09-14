@@ -23,7 +23,7 @@ app.use(express.compress());
 app.use('/v1', function (req, res, next) {
   // 检查来源自动支持Ajax跨域访问
   if (req.get('referrer')) {
-    var host = req.get('referrer').match(/:\/\/([\w0-9\-_\.]+?)\//)[1];
+    var host = req.get('referrer').match(/:\/\/([\w\.\-]+)/)[1];
 
     if (/^(([\w0-9\-_\.]+?)\.)?(staticfile\.org|app\.com|localhost)$/.test(host)) {
       res.header({
