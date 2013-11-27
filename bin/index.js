@@ -11,6 +11,7 @@ var fs = require('fs')
     ]
   }
   , esClient = new ElasticSearchClient(serverOptions)
+  , exec = require('child_process').exec
   , dir;
 
 if (!process.argv[2]) {
@@ -20,8 +21,7 @@ if (!process.argv[2]) {
 
 dir = process.argv[2];
 
-listPackages(dir, function (err, packages) {
-  packages.forEach(function (lib) {
+listPackages(dir, function (lib) {
     var index = {
       name: lib.name,
       filename: lib.filename,
@@ -38,18 +38,20 @@ listPackages(dir, function (err, packages) {
         console.log('[index] ' + lib.name + ' indexed.');
       })
       .exec()
-  });
 });
 
 
 function listPackages(dir, callback) {
-  var packages = Array();
-
   console.log(dir + "/**/package.json");
 
-  glob(dir + "/**/package.json", function (error, matches) {
-    matches.forEach(function (element) {
-      var package = JSON.parse(fs.readFileSync(element, 'utf8'));
+  exec("ls " + dir + "/**/package.json", function (error, stdout) {
+    if (error) {
+      console.log("lookup packages failed: " + error)
+      return;
+    }
+    var matches = stdout.trim().split("\n");
+    matches.forEach(function (file) {
+      var package = JSON.parse(fs.readFileSync(file, 'utf8'));
       package.assets = Array();
       var versions = glob.sync(dir + "/" + package.name + "/!(package.json)");
       versions.forEach(function (version) {
@@ -68,9 +70,8 @@ function listPackages(dir, callback) {
         return natcompare.compare(a.version, b.version);
       })
       package.assets.reverse();
-      packages.push(package);
+      callback(package);
     });
 
-    callback(null, packages);
   });
 };
