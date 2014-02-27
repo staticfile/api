@@ -86,3 +86,24 @@ exports.search = function (req, res) {
     })
     .exec()
 };
+
+exports.show = function (req, res) {
+  var name = req.params.package;
+
+  elasticSearchClient.get('static', 'libs', name)
+    .on('data', function (data) {
+      data = JSON.parse(data);
+      if (!data.exists) {
+        res.statusCode = 404;
+        res.api({success: false, error: "Non-exists package"});
+        return;
+      }
+      res.api(data._source);
+    })
+    .on('done', function () {
+    })
+    .on('error', function (error) {
+      res.api({success: false, error: error});
+    })
+    .exec()
+};

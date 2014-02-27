@@ -54,6 +54,7 @@ if ('development' == app.get('env')) {
 app.get('/', routes.index);
 app.get('/v1/search', routes.api.search);
 app.get('/v1/popular', routes.api.popular);
+app.get('/v1/packages/:package', routes.api.show);
 
 http.createServer(app).listen(app.get('port'), function () {
   console.log('Express server listening on port ' + app.get('port'));
