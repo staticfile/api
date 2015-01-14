@@ -16,7 +16,7 @@ var elasticSearchClient = new ElasticSearchClient(serverOptions);
 exports.popular = function (req, res) {
   fs.readFile(path.dirname(__dirname) + '/popular.json', function (err, content) {
     if (err) {
-      res.api({success: false, error: "Can not list popular.json"});
+      res.api({success: false, error: 'Can not list popular.json'});
       return;
     }
 
@@ -43,24 +43,26 @@ exports.popular = function (req, res) {
 
 exports.search = function (req, res) {
   var q = req.query.q.toLowerCase();
-  var qryObj = {
+
+  var qryObj ={
     query: {
-      "dis_max": {
-        "queries": [
+      'dis_max': {
+        'queries': [
           {
-            "prefix": { "name": q }
+            'prefix': { 'name': q }
           },
+          //{
+          //  'text': { 'name': q }
+          //},
           {
-            "text": { "name": q }
-          },
-          {
-            "term": { "keywords": q }
+            'term': { 'keywords': q }
           }
         ]
       }
     },
     size: req.query.count || 30
   };
+
 
   elasticSearchClient.search('static', 'libs', qryObj)
     .on('data', function (data) {
@@ -95,7 +97,7 @@ exports.show = function (req, res) {
       data = JSON.parse(data);
       if (!data.exists) {
         res.statusCode = 404;
-        res.api({success: false, error: "Non-exists package"});
+        res.api({success: false, error: 'Non-exists package'});
         return;
       }
       res.api(data._source);

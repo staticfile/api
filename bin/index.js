@@ -23,6 +23,8 @@ if (!process.argv[2]) {
 dir = process.argv[2];
 
 listPackages(dir, function (lib) {
+  console.log(1);
+
     var index = {
       name: lib.name,
       filename: lib.filename,
@@ -34,11 +36,11 @@ listPackages(dir, function (lib) {
       repositories: lib.repositories || (lib.repository && [lib.repository]) || []
     };
 
+    console.log(esClient);
     esClient.index('static', 'libs', index, lib.name)
       .on('data', function (data) {
         console.log('[index] ' + lib.name + ' indexed.');
-      })
-      .exec()
+      }).exec();
 });
 
 
