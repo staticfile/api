@@ -23,7 +23,6 @@ if (!process.argv[2]) {
 dir = process.argv[2];
 
 listPackages(dir, function (lib) {
-
     var index = {
       name: lib.name,
       filename: lib.filename,
@@ -38,7 +37,8 @@ listPackages(dir, function (lib) {
     esClient.index('static', 'libs', index, lib.name)
       .on('data', function (data) {
         console.log('[index] ' + lib.name + ' indexed.');
-      }).exec();
+      })
+      .exec()
 });
 
 
@@ -54,8 +54,6 @@ function listPackages(dir, callback) {
     matches.forEach(function (file) {
       var package = require(fs.realpathSync(file));
       package.assets = Array();
-
-      console.log(package.name, 'is found.');
 
       var versions = glob.sync(dir + "/" + package.name + "/!(package.json)");
       versions.forEach(function (version) {
