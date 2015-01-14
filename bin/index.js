@@ -12,6 +12,7 @@ var fs = require('fs')
   }
   , esClient = new ElasticSearchClient(serverOptions)
   , exec = require('child_process').exec
+  , path = require('path')
   , dir;
 
 if (!process.argv[2]) {
@@ -51,8 +52,11 @@ function listPackages(dir, callback) {
     }
     var matches = stdout.trim().split("\n");
     matches.forEach(function (file) {
-      var package = JSON.parse(fs.readFileSync(file, 'utf8'));
+      var package = require(fs.realpathSync(file));
       package.assets = Array();
+
+      console.log(package.name, 'is found.');
+
       var versions = glob.sync(dir + "/" + package.name + "/!(package.json)");
       versions.forEach(function (version) {
         var temp = Object();
