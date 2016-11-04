@@ -24,7 +24,7 @@ fs.readFile(path.resolve(__dirname, '/popular.json'), (err, body) => {
 exports.popular = function(req, res) {
   Promise.all([
     // Popular Libraries
-    knex.select().from('libraries').whereIn('name', populars).orderByRaw(`FIELDS(name, ${populars.join(',')})`),
+    knex.select().from('libraries').whereIn('name', populars).orderByRaw(`FIELD(name, ${populars.map(n => `"${n}"`).join(',')})`),
     // Assets
     knex.select().from('assets').whereIn('library', populars).groupBy('library', 'id')
   ])
