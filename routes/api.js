@@ -13,7 +13,7 @@ const { compare:versionCompare } = require('../bin/natcompare')
 
 const populars = []
 const popularsCache = []
-fs.readFile(path.resolve(__dirname, 'popular.json'), (err, body) => {
+fs.readFile(path.resolve(__dirname, '../popular.json'), (err, body) => {
   if (err) return
 
   body = body || '[]'
