@@ -1,111 +1,125 @@
-var ElasticSearchClient = require('elasticsearchclient')
-  , _ = require('underscore')
-  , fs = require('fs')
-  , path = require('path')
-  , serverOptions = {
-    hosts: [
-      {
-        host: 'localhost',
-        port: 9200
-      }
-    ]
+const fs = require('fs')
+const knex = require('knex')({
+  client: 'mysql',
+  connection: {
+    host : 'localhost',
+    user : 'root',
+    password : 'staticfile_org',
+    database : 'staticfile'
   }
+})
+const { compare:versionCompare } = require('../bin/natcompare')
 
-var elasticSearchClient = new ElasticSearchClient(serverOptions);
+const populars = []
+const popularsCache = []
+fs.readFile(path.resolve(__dirname, '/popular.json'), (err, body) => {
+  if (err) return
 
-exports.popular = function (req, res) {
-  fs.readFile(path.dirname(__dirname) + '/popular.json', function (err, content) {
-    if (err) {
-      res.api({success: false, error: 'Can not list popular.json'});
-      return;
-    }
+  body = body || '[]'
 
-    var populars = JSON.parse(content);
-    elasticSearchClient.multiget('static', 'libs', populars)
-      .on('data', function (data) {
-        data = JSON.parse(data);
+  populars.push(...JSON.parse(body.toString()))
+})
 
-        data = _.map(data.docs, function (lib) {
-          return lib._source;
-        });
+exports.popular = function(req, res) {
+  Promise.all([
+    // Popular Libraries
+    knex.select().from('libraries').whereIn('name', populars).orderByRaw(`FIELDS(name, ${populars.join(',')})`),
+    // Assets
+    knex.select().from('assets').whereIn('library', populars).groupBy('library', 'id')
+  ])
+    .then(([ libraries, assets ]) => {
+      for (const library of libraries) {
+        library.keywords = library.keywords.split(',')
+        const repository = (library.repositories || '').split('@').filter(Boolean)
+        library.repositories = [ !!repository.length ? {
+          type: repository[0],
+          url: repository[1]
+        } : null ].filter(Boolean)
 
-        res.api({libs: data});
-      })
-      .on('done', function () {
-        //always returns 0 right now
-      })
-      .on('error', function (error) {
-        res.api({success: false, error: error});
-      })
-      .exec()
-  });
+        library.assets = assets
+          .filter(asset => asset.library === library.name)
+          .sort((a, b) => versionCompare(a.version, b.version))
+          .reverse()
+          .map(asset => {
+            asset.files = asset.files.split('||')
+            delete asset.library
+
+            return asset
+          })
+      }
+
+      if (!!popularsCache.length) popularsCache.push(...libraries)
+
+      res.api({ libs: libraries })
+    })
+    .catch(err => {
+      res.api({success: false, error: error});
+    })
 }
 
-exports.search = function (req, res) {
-  var q = req.query.q.toLowerCase();
+exports.search = function(req, res) {
+  const q = req.query.q.toLowerCase()
 
-  var qryObj ={
-    query: {
-      'dis_max': {
-        'queries': [
-          {
-            'prefix': { 'name': q }
-          },
-          //{
-          //  'text': { 'name': q }
-          //},
-          {
-            'term': { 'keywords': q }
-          }
-        ]
+  knex.select().from('libraries')
+    .where('name', 'like', `%${q}%`)
+    .orderBy('weight', 'desc')
+    .limit(req.query.count || 30)
+    .then(rows => {
+      const total = rows.length
+
+      const libraries = rows.map(library => {
+        library.keywords = library.keywords.split(',')
+        const repository = (library.repositories || '').split('@').filter(Boolean)
+        library.repositories = [ !!repository.length ? {
+          type: repository[0],
+          url: repository[1]
+        } : null ].filter(Boolean)
+
+        return library
+      })
+
+      res.api({
+        total,
+        libs: libraries
+      })
+    })
+    .catch(err => {
+      console.error(err)
+      res.api({ success: false, error: error })
+    })
+}
+
+exports.show = function(req, res) {
+  const name = req.params.package
+
+  Promise.all([
+    knex.select().from('libraries').where('name', name),
+    knex.select().from('assets').where('libraries', name).orderBy('version', 'desc')
+  ])
+    .then(([ [ library ], assets ]) => {
+      if (!library) {
+        return res.api({ success: false, error: new Error('Library not found') })
       }
-    },
-    size: req.query.count || 30
-  };
+
+      library.keywords = library.keywords.split(',')
+      const repository = (library.repositories || '').split('@').filter(Boolean)
+      library.repositories = [ !!repository.length ? {
+        type: repository[0],
+        url: repository[1]
+      } : null ].filter(Boolean)
 
 
-  elasticSearchClient.search('static', 'libs', qryObj)
-    .on('data', function (data) {
-      data = JSON.parse(data);
+      library.assets = assets
+        .filter(asset => asset.library === library.name)
+        .sort((a, b) => versionCompare(a.version, b.version))
+        .reverse()
+        .map(asset => {
+          asset.files = asset.files.split('||')
+          delete asset.library
 
-      if (data.hits) {
-        data.hits.libs = _.map(data.hits.hits, function (lib) {
-          return lib._source;
-        });
+          return asset
+        })
 
-        delete data.hits.hits;
-
-        res.api(data.hits);
-      } else {
-        res.api({total: 0, max_score: 0, libs: []});
-      }
+      res.api(library)
     })
-    .on('done', function () {
-      //always returns 0 right now
-    })
-    .on('error', function (error) {
-      res.api({success: false, error: error});
-    })
-    .exec()
-};
-
-exports.show = function (req, res) {
-  var name = req.params.package;
-
-  elasticSearchClient.get('static', 'libs', name)
-    .on('data', function (data) {
-      data = JSON.parse(data);
-      if (!data.exists) {
-        res.statusCode = 404;
-        res.api({success: false, error: 'Non-exists package'});
-        return;
-      }
-      res.api(data._source);
-    })
-    .on('done', function () {
-    })
-    .on('error', function (error) {
-      res.api({success: false, error: error});
-    })
-    .exec()
-};
+}
