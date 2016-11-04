@@ -95,7 +95,7 @@ exports.show = function(req, res) {
 
   Promise.all([
     knex.select().from('libraries').where('name', name),
-    knex.select().from('assets').where('libraries', name).orderBy('version', 'desc')
+    knex.select().from('assets').where('library', name).orderBy('version', 'desc')
   ])
     .then(([ [ library ], assets ]) => {
       if (!library) {
