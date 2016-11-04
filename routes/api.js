@@ -1,4 +1,5 @@
 const fs = require('fs')
+const path = require('path')
 const knex = require('knex')({
   client: 'mysql',
   connection: {
