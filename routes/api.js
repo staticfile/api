@@ -2,12 +2,7 @@ const fs = require('fs')
 const path = require('path')
 const knex = require('knex')({
   client: 'mysql',
-  connection: {
-    host : 'localhost',
-    user : 'root',
-    password : 'staticfile_org',
-    database : 'staticfile'
-  }
+  connection: require('../db.json')
 })
 const { compare:versionCompare } = require('../bin/natcompare')
 
@@ -44,9 +39,11 @@ exports.popular = function(req, res) {
           .map(asset => {
             asset.files = asset.files.split('||')
             delete asset.library
+            delete asset.id
 
             return asset
           })
+        delete library.id
       }
 
       if (!!popularsCache.length) popularsCache.push(...libraries)
@@ -75,6 +72,7 @@ exports.search = function(req, res) {
           type: repository[0],
           url: repository[1]
         } : null ].filter(Boolean)
+        delete library.id
 
         return library
       })
@@ -109,7 +107,6 @@ exports.show = function(req, res) {
         url: repository[1]
       } : null ].filter(Boolean)
 
-
       library.assets = assets
         .filter(asset => asset.library === library.name)
         .sort((a, b) => versionCompare(a.version, b.version))
@@ -117,9 +114,11 @@ exports.show = function(req, res) {
         .map(asset => {
           asset.files = asset.files.split('||')
           delete asset.library
+          delete asset.id
 
           return asset
         })
+      delete library.id
 
       res.api(library)
     })

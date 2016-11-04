@@ -1,79 +1,102 @@
-var fs = require('fs')
-  , ElasticSearchClient = require('elasticsearchclient')
-  , glob = require('glob')
-  , natcompare = require('./natcompare')
-  , serverOptions = {
-    hosts: [
-      {
-        host: 'localhost',
-        port: 9200
-      }
-    ]
-  }
-  , esClient = new ElasticSearchClient(serverOptions)
-  , exec = require('child_process').exec
-  , path = require('path')
-  , dir;
+const fetch = require('node-fetch')
+const util = require('util')
+const knex = require('knex')({
+  client: 'mysql',
+  connection: require('../db.json')
+})
 
-if (!process.argv[2]) {
-  console.log('Usage: node index.js <dir>');
-  process.exit();
+const cdnjsAPIRoot = 'https://api.cdnjs.com/libraries/'
+
+function fetchAllLibraiesNames() {
+  return fetch(cdnjsAPIRoot)
+    .then(res => res.json())
+    .then(data => data.results.map(n => n.name))
 }
 
-dir = process.argv[2];
+const excludes = [ 'mathjax', 'material-design-icons', 'browser-logos', 'twemoji' ]
 
-listPackages(dir, function (lib) {
-    var index = {
-      name: lib.name,
-      filename: lib.filename,
-      homepage: lib.homepage,
-      version: lib.version,
-      keywords: lib.keywords,
-      description: lib.description,
-      assets: lib.assets,
-      repositories: lib.repositories || (lib.repository && [lib.repository]) || []
-    };
+function fetchLib(libName, trx) {
+  if (excludes.includes(libName)) return Promise.resolve(libName)
 
-    esClient.index('static', 'libs', index, lib.name)
-      .on('data', function (data) {
-        console.log('[index] ' + lib.name + ' indexed.');
-      })
-      .exec()
-});
+  return fetch(`${cdnjsAPIRoot}${libName}`)
+    .then(res => res.json())
+    .then(lib => {
+      const index = {
+        name: lib.name,
+        filename: lib.filename,
+        homepage: lib.homepage,
+        version: lib.version,
+        keywords: lib.keywords,
+        description: lib.description,
+        assets: lib.assets,
+        repositories: lib.repositories || (lib.repository && [lib.repository]) || []
+      }
 
+      return updateIndex(index, lib.name, trx)
+    })
+    .then(libName => {
+      console.log('[index] ' + libName + ' indexed.')
+      return libName
+    })
+    .catch(err => {
+      console.error(err.message)
+      return Promise.resolve(libName)
+    })
+}
 
-function listPackages(dir, callback) {
-  console.log(dir + "/**/package.json");
+knex.transaction(trx => {
+  fetchAllLibraiesNames()
+    .then(libNames => {
+      console.log(libNames.length)
+      return libNames.map(name => fetchLib(name, trx))
+    })
+    .then(promises => Promise.all(promises))
+    .then(() => trx.commit())
+    .catch(err => {
+      console.error(err)
+      trx.commit()
+    })
+})
+  .then(() => {
+    console.log('Done!')
+    process.exit(0)
+  })
+  .catch(err => {
+    console.error(err)
+  })
 
-  exec("ls " + dir + "/**/package.json", function (error, stdout) {
-    if (error) {
-      console.log("lookup packages failed: " + error)
-      return;
+function updateIndex(index, name, trx) {
+  return new Promise((resolve, reject) => {
+    const library = {
+      name: index.name,
+      version: index.version,
+      description: index.description,
+      homepage: index.homepage || '',
+      keywords: (index.keywords || []).join(','),
+      repositories: index.repositories.map(n => `${n.type}@${n.url}`)
     }
-    var matches = stdout.trim().split("\n");
-    matches.forEach(function (file) {
-      var package = require(fs.realpathSync(file));
-      package.assets = Array();
 
-      var versions = glob.sync(dir + "/" + package.name + "/!(package.json)");
-      versions.forEach(function (version) {
-        var temp = Object();
-        temp.version = version.replace(/^.+\//, "");
-        temp.files = glob.sync(version + "/**/*.*");
-        for (var i = 0; i < temp.files.length; i++) {
-          temp.files[i] = temp.files[i].replace(version + "/", "");
-        }
-        package.assets.push(temp);
-      });
+    const assets = index.assets.map(asset => {
+      return {
+        library: index.name,
+        files: asset.files.join('||'),
+        version: asset.version
+      }
+    })
 
-      if (!package.assets[0]) return;
+    const insertLib = knex('libraries').insert(library)
+    delete library.id
+    const updateLib = knex('libraries').update(library)
+    const queryLib = util.format('%s on duplicate key update %s',
+      insertLib.toString(), updateLib.toString().replace(/^update ([`"])[^\1]+\1 set/i, ''))
 
-      package.assets.sort(function (a, b) {
-        return natcompare.compare(a.version, b.version);
+    knex.raw(queryLib).transacting(trx)
+      .then(() => {
+        return Promise.all(
+          assets.map(asset => knex('assets').insert(asset).transacting(trx))
+        )
       })
-      package.assets.reverse();
-      callback(package);
-    });
-
-  });
-};
+      .then(() => resolve(name))
+      .catch(() => resolve(name))
+  })
+}
