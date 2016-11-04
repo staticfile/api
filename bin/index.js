@@ -2,7 +2,7 @@ const fetch = require('node-fetch')
 const util = require('util')
 const knex = require('knex')({
   client: 'mysql',
-  connection: require('../db.json')
+  connection: require('../dbconfig')
 })
 
 const cdnjsAPIRoot = 'https://api.cdnjs.com/libraries/'

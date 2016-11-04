@@ -2,7 +2,7 @@ const fs = require('fs')
 const path = require('path')
 const knex = require('knex')({
   client: 'mysql',
-  connection: require('../db.json')
+  connection: require('../dbconfig')
 })
 const { compare:versionCompare } = require('../bin/natcompare')
 
