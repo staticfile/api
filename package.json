@@ -6,6 +6,7 @@
     "start": "node app.js"
   },
   "dependencies": {
+    "elasticsearch": "^3.1.1",
     "elasticsearchclient": "0.5.3",
     "express": "3.1.2",
     "glob": "3.2.6",
