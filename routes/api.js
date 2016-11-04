@@ -54,7 +54,7 @@ exports.popular = function(req, res) {
       res.api({ libs: libraries })
     })
     .catch(err => {
-      res.api({success: false, error: error});
+      res.api({success: false, error: err})
     })
 }
 
@@ -86,7 +86,7 @@ exports.search = function(req, res) {
     })
     .catch(err => {
       console.error(err)
-      res.api({ success: false, error: error })
+      res.api({ success: false, error: err })
     })
 }
 
@@ -122,5 +122,9 @@ exports.show = function(req, res) {
         })
 
       res.api(library)
+    })
+    .catch(err => {
+      console.error(err)
+      res.api({ success: false, error: err })
     })
 }
