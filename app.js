@@ -25,13 +25,11 @@ app.use('/v1', function (req, res, next) {
   if (req.get('referrer')) {
     var host = req.get('referrer').match(/:\/\/([\w\.\-]+)/)[1];
 
-    if (/^(([\w0-9\-_\.]+?)\.)?(staticfile\.org|app\.com|localhost)$/.test(host)) {
       res.header({
-        "Access-Control-Allow-Origin": 'http://' + host,
+        "Access-Control-Allow-Origin": '*',
         "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
         "Access-Control-Allow-Headers": "X-PINGOTHER"
       });
-    }
   }
 
   res.api = function (data) {
